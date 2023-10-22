@@ -148,7 +148,7 @@ do {
         Start-Sleep -Seconds '2'
         Write-Host "Working ... Configuration des permissions NTFS sur $pathNiveau1\$fileNiveau1" -ForegroundColor Cyan
         Start-Sleep -Seconds '2'
-        Add-NTFSAccess -Path "$pathNiveau1\$fileNiveau1" -Account "CAPITALE\$namePremierNiveau" -AccessRights Read, Traverse  -AppliesTo ThisFolderOnly
+        Add-NTFSAccess -Path "$pathNiveau1\$fileNiveau1" -Account "DOMAIN\$namePremierNiveau" -AccessRights Read, Traverse  -AppliesTo ThisFolderOnly
 
         #Desactiver l'heritage
         Write-Host "Working ... Desactivation de l'heritage sur $pathNiveau1\$fileNiveau1" -ForegroundColor Cyan
@@ -181,7 +181,7 @@ do {
 ########        4 - CRÉATION DE LA STRUCTURE DFS      ###########
 #################################################################
 #Creation DFS
-Write-Host "Working ... Creation du pointeur DFS \\capitale.qc.ca\partage\$fileNiveau1" -ForegroundColor Cyan
+Write-Host "Working ... Creation du pointeur DFS \\DOMAIN.qc.ca\partage\$fileNiveau1" -ForegroundColor Cyan
 Start-Sleep -Seconds '1'
 #setserver name and share path
 New-DfsnFolder -Path "\\server\share\$fileNiveau1" -TargetPath "$pathNiveau1\$fileNiveau1" -EnableTargetFailback $false | Out-Null
@@ -190,7 +190,7 @@ New-DfsnFolder -Path "\\server\share\$fileNiveau1" -TargetPath "$pathNiveau1\$fi
 Write-Host "Working ... Autoriser DFSN Access" -ForegroundColor Cyan
 Start-Sleep -Seconds '1'
 #setserver name and share path
-Grant-DfsnAccess -Path "\\server\share\$fileNiveau1" -AccountName "CAPITALE\$namePremierNiveau" | Out-Null
+Grant-DfsnAccess -Path "\\server\share\$fileNiveau1" -AccountName "DOMAIN\$namePremierNiveau" | Out-Null
 
 #Configure la vue explicite dans DFS avec dfsutil car non fonctionnelle en PowerShell
 Write-Host "Working ... Configuration de la vue explicite DFS " -ForegroundColor Cyan
