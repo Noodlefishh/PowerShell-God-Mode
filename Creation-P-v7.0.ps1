@@ -23,7 +23,7 @@ Write-Host ""
 ############ 1 - Configuration des groupes niveau 1 et 2 ###############
 ########################################################################
 #Input groupe premier niveau + Vérifications
-$namePremierNiveau = Read-Host -Prompt "1/5 : Entrez le nom du groupe AD de niveau 1 (Ex : Prtg-CAAP-DPESF)  "
+$namePremierNiveau = Read-Host -Prompt "1/5 : Entrez le nom du groupe AD de niveau 1 (Ex : Prtg-Group-DPESF)  "
 
 if ($namePremierNiveau -like '*PRTG*') {
     $namePremierNiveau = $namePremierNiveau
@@ -31,7 +31,7 @@ if ($namePremierNiveau -like '*PRTG*') {
 elseif ($namePremierNiveau -notlike '*PRTG*') {
     do {
         Write-Host "Mauvaise nomenclature, le nom doit commencer par PRTG-, recommencez S.V.P" -ForegroundColor Red
-        $namePremierNiveau = Read-Host -Prompt "1/5 : Entrez le nom du groupe de premier niveau (Ex : Prtg-CAAP-DPESF)  "
+        $namePremierNiveau = Read-Host -Prompt "1/5 : Entrez le nom du groupe de premier niveau (Ex : Prtg-Group-DPESF)  "
 
     } until ($namePremierNiveau -like '*PRTG*')
 }
@@ -46,7 +46,7 @@ do {
     $testNiveau1 = Get-ADGroup -LDAPFilter "(SAMAccountName=$namePremierNiveau)"
     if ($testNiveau1 -ne $null) {
         Write-Host "le groupe existe deja, recommencez S.V.P " -ForegroundColor Red
-        $namePremierNiveau = Read-Host -Prompt "1/5 : Entrez le nom du groupe AD de niveau 1 (Ex : Prtg-CAAP-DPESF)  "
+        $namePremierNiveau = Read-Host -Prompt "1/5 : Entrez le nom du groupe AD de niveau 1 (Ex : Prtg-Group-DPESF)  "
     }
     elseif ($testNiveau1 -eq $null) {  
         Write-Host "Le groupe n'existe pas .. continuons" -ForegroundColor Green  
@@ -113,12 +113,12 @@ Set-ADGroup -Identity $niveau1 -ManagedBy $niveauP -Server $domain | Out-Null
 #################################################################
 
 #Input nom du pointeur DFS + Validation des entrées
-$fileNiveau1 = Read-Host -Prompt "3/5 : Entrez le nom DFS : (CAAP - ASSIND) "
+$fileNiveau1 = Read-Host -Prompt "3/5 : Entrez le nom DFS : (Group - ASSIND) "
 
 if (!$fileNiveau1) {
     do {
         Write-Host "Vous devez entrer un nom, Recommencez S.V.P"
-        $fileNiveau1 = Read-Host -Prompt "3/5 : Entrez le nom DFS : (CAAP - ASSIND) "
+        $fileNiveau1 = Read-Host -Prompt "3/5 : Entrez le nom DFS : (Group - ASSIND) "
     } until ($fileNiveau1)
 }
 
@@ -168,7 +168,7 @@ do {
 
         Write-Host "Le path est invalide, recommencez" -ForegroundColor Red
         Start-Sleep -Seconds '4'
-        $pathNiveau1 = Read-Host -Prompt "5/6 : Entrez le path physique pour la DFS (Ex : \\CPW1-DFS-03\DS-1$\CAAP) "
+        $pathNiveau1 = Read-Host -Prompt "5/6 : Entrez le path physique pour la DFS (Ex : \\SRV-DFS-03\DS-1$\Group) "
 
     }
     else {
