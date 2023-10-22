@@ -83,14 +83,17 @@ $descriptionPremierNiveau = "Donne l'acces au lecteur P: en regroupant les dossi
 $descriptionDeuxiemeNiveau = "Acces au partage de 2 ieme Niveau (P:)"
 
 #Création premier niveau
-$niveau1 = New-ADGroup -Name $namePremierNiveau -GroupScope Global -Description $descriptionPremierNiveau -GroupCategory Security -Path 'OU=Niveau1,OU=DFS_Partages,OU=FileServers,OU=Systemes_Techno,OU=_Gestion,DC=capitale,DC=qc,DC=ca' -PassThru -Server $domain 
+$OUPath = Read-Host -Prompt "Entrer le full OU Path"
+$niveau1 = New-ADGroup -Name $namePremierNiveau -GroupScope Global -Description $descriptionPremierNiveau -GroupCategory Security -Path $OUPath -PassThru -Server $domain 
 
 #Création des 3 groupes de seconds niveaux E, L et P
 Write-Host "Working ...Creation des 3 groupes de niveau 2" -ForegroundColor Cyan
 Start-Sleep -Seconds 2
-$niveauP = New-ADGroup -Name "$namePremierNiveau-$nameDeuxiemeNiveau-P" -GroupScope Global -Description $descriptionDeuxiemeNiveau -GroupCategory Security -Path 'OU=Niveau2,OU=DFS_Partages,OU=FileServers,OU=Systemes_Techno,OU=_Gestion,DC=capitale,DC=qc,DC=ca' -PassThru -Server $domain
-$niveauL = New-ADGroup -Name "$namePremierNiveau-$nameDeuxiemeNiveau-L" -GroupScope Global -Description $descriptionDeuxiemeNiveau -GroupCategory Security -Path 'OU=Niveau2,OU=DFS_Partages,OU=FileServers,OU=Systemes_Techno,OU=_Gestion,DC=capitale,DC=qc,DC=ca' -PassThru -Server $domain
-$niveauE = New-ADGroup -Name "$namePremierNiveau-$nameDeuxiemeNiveau-E" -GroupScope Global -Description $descriptionDeuxiemeNiveau -GroupCategory Security -Path 'OU=Niveau2,OU=DFS_Partages,OU=FileServers,OU=Systemes_Techno,OU=_Gestion,DC=capitale,DC=qc,DC=ca' -PassThru -Server $domain
+$OUPathN2 = Read-Host -Promt "Entrer le full OU Path N2"
+$OUPathN2 = Read-Host -Promt "Entrer le full OU Path N3"
+$niveauP = New-ADGroup -Name "$namePremierNiveau-$nameDeuxiemeNiveau-P" -GroupScope Global -Description $descriptionDeuxiemeNiveau -GroupCategory Security -Path $OUPathN2 -PassThru -Server $domain
+$niveauL = New-ADGroup -Name "$namePremierNiveau-$nameDeuxiemeNiveau-L" -GroupScope Global -Description $descriptionDeuxiemeNiveau -GroupCategory Security -Path $OUPathN2 -PassThru -Server $domain
+$niveauE = New-ADGroup -Name "$namePremierNiveau-$nameDeuxiemeNiveau-E" -GroupScope Global -Description $descriptionDeuxiemeNiveau -GroupCategory Security -Path $OUPathN2 -PassThru -Server $domain
 
 #Ajout des 3 groupes de second niveau dans le premier niveau
 Write-Host "Working ...Ajout des 3 groupes de niveau 2 dans $namePremierNiveau" -ForegroundColor Cyan
@@ -127,7 +130,7 @@ else {
 }
 
 #Input du path physique ou les données DFS seront hosté
-$pathNiveau1 = Read-Host -Prompt "4/5 : Entrez le path physique (Ex : \\CPW1-DFS-03\DS-1$\CAAP) " 
+$pathNiveau1 = Read-Host -Prompt "4/5 : Entrez le path physique ; " 
 Write-Host "Test du path $pathNiveau1" -ForegroundColor Cyan
 Start-Sleep -Seconds 2
 
@@ -184,17 +187,19 @@ do {
 #Creation DFS
 Write-Host "Working ... Creation du pointeur DFS \\capitale.qc.ca\partage\$fileNiveau1" -ForegroundColor Cyan
 Start-Sleep -Seconds '1'
-New-DfsnFolder -Path "\\capitale.qc.ca\partage\$fileNiveau1" -TargetPath "$pathNiveau1\$fileNiveau1" -EnableTargetFailback $false | Out-Null
+#setserver name and share path
+New-DfsnFolder -Path "\\server\share\$fileNiveau1" -TargetPath "$pathNiveau1\$fileNiveau1" -EnableTargetFailback $false | Out-Null
 
 #Grant DFS access au premier groupe
 Write-Host "Working ... Autoriser DFSN Access" -ForegroundColor Cyan
 Start-Sleep -Seconds '1'
-Grant-DfsnAccess -Path "\\capitale.qc.ca\partage\$fileNiveau1" -AccountName "CAPITALE\$namePremierNiveau" | Out-Null
+#setserver name and share path
+Grant-DfsnAccess -Path "\\server\share\$fileNiveau1" -AccountName "CAPITALE\$namePremierNiveau" | Out-Null
 
 #Configure la vue explicite dans DFS avec dfsutil car non fonctionnelle en PowerShell
 Write-Host "Working ... Configuration de la vue explicite DFS " -ForegroundColor Cyan
 Start-Sleep -Seconds '1'
-dfsutil property SD grant \\capitale.qc.ca\partage\$fileNiveau1 $namePremierNiveau:RX Protect | Out-Null
+dfsutil property SD grant "\\server\share\$fileNiveau1" $namePremierNiveau:RX Protect | Out-Null
 
 #################################################################
 ##########    5 - CRÉATION DE LA STRUCTURE NIVEAU 2   ##########
@@ -207,9 +212,11 @@ New-Item  -ItemType Directory -Path $pathNiveau1\$fileNiveau1\$nameDeuxiemeNivea
 #Paramétrage NTFS du niveau 2
 Write-Host "Working ... Configuration des permissions NTFS sur $pathNiveau1\$fileNiveau1\$nameDeuxiemeNiveau" -ForegroundColor Cyan
 Start-Sleep -Seconds '2'
-Add-NTFSAccess -Path "$pathNiveau1\$fileNiveau1\$nameDeuxiemeNiveau" -Account "CAPITALE\$namePremierNiveau-$nameDeuxiemeNiveau-L" -AccessRights Read, ReadAndExecute, ReadAttributes, ReadData
-Add-NTFSAccess -Path "$pathNiveau1\$fileNiveau1\$nameDeuxiemeNiveau" -Account "CAPITALE\$namePremierNiveau-$nameDeuxiemeNiveau-E" -AccessRights Read, ReadAndExecute, Write, Traverse, DeleteSubdirectoriesAndFiles
-Add-NTFSAccess -Path "$pathNiveau1\$fileNiveau1\$nameDeuxiemeNiveau" -Account "CAPITALE\$namePremierNiveau-$nameDeuxiemeNiveau-P" -AccessRights Read, ReadAndExecute, Write, Traverse, DeleteSubdirectoriesAndFiles
+
+#Set Domain 
+Add-NTFSAccess -Path "$pathNiveau1\$fileNiveau1\$nameDeuxiemeNiveau" -Account "DOMAIN\$namePremierNiveau-$nameDeuxiemeNiveau-L" -AccessRights Read, ReadAndExecute, ReadAttributes, ReadData
+Add-NTFSAccess -Path "$pathNiveau1\$fileNiveau1\$nameDeuxiemeNiveau" -Account "DOMAIN\$namePremierNiveau-$nameDeuxiemeNiveau-E" -AccessRights Read, ReadAndExecute, Write, Traverse, DeleteSubdirectoriesAndFiles
+Add-NTFSAccess -Path "$pathNiveau1\$fileNiveau1\$nameDeuxiemeNiveau" -Account "DOMAIN\$namePremierNiveau-$nameDeuxiemeNiveau-P" -AccessRights Read, ReadAndExecute, Write, Traverse, DeleteSubdirectoriesAndFiles
 
 #Activer l'héritage niveau 2
 Write-Host "Working ... Activation de l'heritage sur $pathNiveau1\$fileNiveau1\$nameDeuxiemeNiveau" -ForegroundColor Cyan
@@ -242,9 +249,9 @@ do {
         #Cretion des 3 groupes de seconds niveaux
         Write-Host "Working ...Creation des 3 groupes de niveau 2" -ForegroundColor Cyan
         Start-Sleep -Seconds 2
-        $niveauP2 = New-ADGroup -Name "$namePremierNiveau-$file2Niveau2-P" -GroupScope Global -Description $descriptionDeuxiemeNiveau -GroupCategory Security -Path 'OU=Niveau2,OU=DFS_Partages,OU=FileServers,OU=Systemes_Techno,OU=_Gestion,DC=capitale,DC=qc,DC=ca' -PassThru -Server $domain
-        $niveauL2 = New-ADGroup -Name "$namePremierNiveau-$file2Niveau2-L" -GroupScope Global -Description $descriptionDeuxiemeNiveau -GroupCategory Security -Path 'OU=Niveau2,OU=DFS_Partages,OU=FileServers,OU=Systemes_Techno,OU=_Gestion,DC=capitale,DC=qc,DC=ca' -PassThru -Server $domain
-        $niveauE2 = New-ADGroup -Name "$namePremierNiveau-$file2Niveau2-E" -GroupScope Global -Description $descriptionDeuxiemeNiveau -GroupCategory Security -Path 'OU=Niveau2,OU=DFS_Partages,OU=FileServers,OU=Systemes_Techno,OU=_Gestion,DC=capitale,DC=qc,DC=ca' -PassThru -Server $domain
+        $niveauP2 = New-ADGroup -Name "$namePremierNiveau-$file2Niveau2-P" -GroupScope Global -Description $descriptionDeuxiemeNiveau -GroupCategory Security -Path $OUPathN2 -PassThru -Server $domain
+        $niveauL2 = New-ADGroup -Name "$namePremierNiveau-$file2Niveau2-L" -GroupScope Global -Description $descriptionDeuxiemeNiveau -GroupCategory Security -Path $OUPathN2 -PassThru -Server $domain
+        $niveauE2 = New-ADGroup -Name "$namePremierNiveau-$file2Niveau2-E" -GroupScope Global -Description $descriptionDeuxiemeNiveau -GroupCategory Security -Path $OUPathN2 -PassThru -Server $domain
 
         #Ajout des 3 groupes de second niveau dans le premier niveau
         Write-Host "Working ...Ajout des 3 groupes de niveau 2 dans $namePremierNiveau" -ForegroundColor Cyan
@@ -256,9 +263,11 @@ do {
         #Paramétrage NTFS du niveau 2
         Write-Host "Working ... Configuration des permissions NTFS sur $pathNiveau1\$fileNiveau1\$file2Niveau2" -ForegroundColor Cyan
         Start-Sleep -Seconds '2'
-        Add-NTFSAccess -Path "$pathNiveau1\$fileNiveau1\$file2Niveau2" -Account "CAPITALE\$namePremierNiveau-$file2Niveau2-L" -AccessRights Read, ReadAndExecute, ReadAttributes, ReadData | Out-String
-        Add-NTFSAccess -Path "$pathNiveau1\$fileNiveau1\$file2Niveau2" -Account "CAPITALE\$namePremierNiveau-$file2Niveau2-E" -AccessRights Read, ReadAndExecute, Write, Traverse, DeleteSubdirectoriesAndFiles | Out-String
-        Add-NTFSAccess -Path "$pathNiveau1\$fileNiveau1\$file2Niveau2" -Account "CAPITALE\$namePremierNiveau-$file2Niveau2-P" -AccessRights Read, ReadAndExecute, Write, Traverse, DeleteSubdirectoriesAndFiles | Out-String
+
+        #Set Domain
+        Add-NTFSAccess -Path "$pathNiveau1\$fileNiveau1\$file2Niveau2" -Account "DOMAIN\$namePremierNiveau-$file2Niveau2-L" -AccessRights Read, ReadAndExecute, ReadAttributes, ReadData | Out-String
+        Add-NTFSAccess -Path "$pathNiveau1\$fileNiveau1\$file2Niveau2" -Account "DOMAIN\$namePremierNiveau-$file2Niveau2-E" -AccessRights Read, ReadAndExecute, Write, Traverse, DeleteSubdirectoriesAndFiles | Out-String
+        Add-NTFSAccess -Path "$pathNiveau1\$fileNiveau1\$file2Niveau2" -Account "DOMAIN\$namePremierNiveau-$file2Niveau2-P" -AccessRights Read, ReadAndExecute, Write, Traverse, DeleteSubdirectoriesAndFiles | Out-String
 
     } 
     elseif ($reponseNiveau2 -eq 'N') {
