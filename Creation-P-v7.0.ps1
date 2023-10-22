@@ -142,10 +142,6 @@ do {
         Write-Host "Le path est valide !" -ForegroundColor Green
         Start-Sleep -Seconds '2'
 
-        #DOIT TESTER AVANT SI LE RÉPERTOIRE EXISTE OU NON, 
-        #SI LE RÉPERTOIRE EXISTE, LE SCRIPT DOIT INFORMER LE USER
-        #LE PROBLÈME EST QUE SI LE RÉPERTOIRE EXISTE, IL L'ÉCRASE ET OVERRIDE
-
         Write-Host "Working ... Creation du repertoire niveau 1 sur $pathNiveau1" -ForegroundColor Cyan
         Start-Sleep -Seconds '2'
         New-Item  -ItemType Directory -Path $pathNiveau1\$fileNiveau1 | Out-Null
